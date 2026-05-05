@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
+import { BASE_URL } from '../services/api';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'> };
 
@@ -18,6 +19,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
@@ -29,10 +31,12 @@ export default function RegisterScreen({ navigation }: Props) {
       return;
     }
     setLoading(true);
+    setError('');
     try {
       await register(name.trim(), email.trim().toLowerCase(), password);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? t('auth.registerFailed');
+      const msg = e?.response?.data?.detail ?? e?.message ?? t('auth.registerFailed');
+      setError(msg);
       Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
@@ -81,6 +85,13 @@ export default function RegisterScreen({ navigation }: Props) {
             secureTextEntry
           />
 
+          {error ? (
+            <View style={s.errorBox}>
+              <Text style={s.errorText}>{error}</Text>
+              <Text style={s.apiText}>{BASE_URL}</Text>
+            </View>
+          ) : null}
+
           <TouchableOpacity style={s.btn} onPress={handleRegister} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -128,4 +139,15 @@ const s = StyleSheet.create({
   link: { alignItems: 'center', marginTop: 16 },
   linkText: { fontSize: 14, color: COLORS.textMuted },
   linkBold: { color: COLORS.primary, fontWeight: '700' },
+  errorBox: {
+    backgroundColor: COLORS.dangerBg,
+    borderWidth: 1,
+    borderColor: '#F2B8B5',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  errorText: { color: COLORS.danger, fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  apiText: { color: COLORS.textLight, fontSize: 10, marginTop: 4 },
 });
