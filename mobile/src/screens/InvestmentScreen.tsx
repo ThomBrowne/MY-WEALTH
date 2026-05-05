@@ -750,7 +750,7 @@ export default function InvestmentScreen() {
       setWatchTickers(tickers);
       const [portfolioRes, watchRes] = await Promise.all([
         investmentsApi.getPortfolio(),
-        investmentsApi.getMultipleQuotes(tickers),
+        investmentsApi.getMultipleQuotes(tickers).catch(() => ({ data: [] as EnhancedQuote[] })),
       ]);
       setPortfolio(portfolioRes.data);
       setWatchlist(watchRes.data);
