@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: my-wealth-api
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+
+  - type: web
+    name: my-wealth-web
+    env: static
+    rootDir: mobile
+    buildCommand: npm ci && npx expo export --platform web
+    staticPublishPath: dist
+    envVars:
+      - key: EXPO_PUBLIC_API_BASE_URL
+        value: https://my-wealth-api.onrender.com/api/v1
