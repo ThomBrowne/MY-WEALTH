@@ -16,8 +16,10 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [showSource, setShowSource] = useState(false);
 
   const pickImage = async (fromCamera: boolean) => {
+    setShowSource(false);
     const perm = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,12 +63,28 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
   };
 
   const showSourcePicker = () => {
-    Alert.alert('영수증 스캔', '이미지 소스를 선택하세요', [
-      { text: '📷 카메라', onPress: () => pickImage(true) },
-      { text: '🖼️ 갤러리', onPress: () => pickImage(false) },
-      { text: '취소', style: 'cancel' },
-    ]);
+    setShowSource(true);
   };
+
+  const SourceModal = (
+    <Modal visible={showSource} transparent animationType="fade" onRequestClose={() => setShowSource(false)}>
+      <View style={styles.sourceOverlay}>
+        <View style={styles.sourceBox}>
+          <Text style={styles.sourceTitle}>영수증 스캔</Text>
+          <Text style={styles.sourceBody}>사진을 찍거나 앨범에서 영수증 이미지를 선택하세요.</Text>
+          <TouchableOpacity style={styles.sourcePrimaryBtn} onPress={() => pickImage(true)} activeOpacity={0.8}>
+            <Text style={styles.sourcePrimaryText}>카메라로 촬영</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sourceSecondaryBtn} onPress={() => pickImage(false)} activeOpacity={0.8}>
+            <Text style={styles.sourceSecondaryText}>앨범에서 선택</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.sourceCancelBtn} onPress={() => setShowSource(false)}>
+            <Text style={styles.sourceCancelText}>취소</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   if (compact) {
     return (
@@ -74,6 +92,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
         <TouchableOpacity style={styles.scanBtnCompact} onPress={showSourcePicker} activeOpacity={0.8}>
           <Text style={styles.scanIcon}>📷</Text>
         </TouchableOpacity>
+        {SourceModal}
         <Modal visible={showPreview} transparent animationType="fade">
           <View style={styles.overlay}>
             <View style={styles.previewBox}>
@@ -97,6 +116,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
         <Text style={styles.scanIcon}>📷</Text>
         <Text style={styles.scanText}>영수증 스캔</Text>
       </TouchableOpacity>
+      {SourceModal}
 
       {/* 스캔 중 프리뷰 모달 */}
       <Modal visible={showPreview} transparent animationType="fade">
@@ -155,4 +175,38 @@ const styles = StyleSheet.create({
     padding: 16, backgroundColor: COLORS.bg,
   },
   scanningText: { fontSize: 14, color: COLORS.textMuted, flex: 1 },
+  sourceOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  sourceBox: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 22,
+    paddingBottom: 34,
+  },
+  sourceTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  sourceBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 18 },
+  sourcePrimaryBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sourcePrimaryText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  sourceSecondaryBtn: {
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sourceSecondaryText: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  sourceCancelBtn: { paddingVertical: 10, alignItems: 'center' },
+  sourceCancelText: { color: COLORS.textMuted, fontSize: 14, fontWeight: '700' },
 });
