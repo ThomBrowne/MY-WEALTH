@@ -341,7 +341,7 @@ export default function DashboardScreen() {
     setScanning(true);
     try {
       const { data } = await receiptsApi.scan(uri, mimeType);
-      navigation.navigate('거래', { screen: 'AddTxHome', params: { initialScanResult: data } });
+      navigation.navigate('거래', { initialScanResult: data });
     } catch (e: any) {
       Alert.alert('스캔 오류', e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
     } finally {

@@ -497,6 +497,7 @@ const sb = StyleSheet.create({
 
 export default function AddTransactionScreen({ navigation, route }: Props) {
   const { t } = useTranslation();
+  const routeScanResult = (route.params as any)?.initialScanResult as ReceiptScanResult | undefined;
   const [txType, setTxType]             = useState<TxType>('expense');
   const [amountRaw, setAmountRaw]       = useState('');
   const [description, setDescription]   = useState('');
@@ -520,7 +521,7 @@ export default function AddTransactionScreen({ navigation, route }: Props) {
   } | null>(null);
   const [error, setError]               = useState('');
   // 대시보드 퀵 스캔에서 전달된 결과 (마운트 시 1회만 적용)
-  const initialScanRef = useRef<ReceiptScanResult | null>((route.params as any)?.initialScanResult ?? null);
+  const initialScanRef = useRef<ReceiptScanResult | null>(routeScanResult ?? null);
 
   useEffect(() => {
     Promise.all([
@@ -564,6 +565,23 @@ export default function AddTransactionScreen({ navigation, route }: Props) {
     () => accounts.filter(a => a.account_type === 'expense'),
     [accounts],
   );
+
+  useEffect(() => {
+    if (!routeScanResult) return;
+    setTxType('expense');
+    if (routeScanResult.description) setDescription(routeScanResult.description);
+    if (routeScanResult.amount != null) setAmountRaw(String(Math.round(routeScanResult.amount)));
+    setScanResult(routeScanResult);
+    if (routeScanResult.category) {
+      const matched = expenseAccounts.find((a) => a.category === routeScanResult.category);
+      setSelectedCat(routeScanResult.category);
+      if (matched) setToAccountId(matched.id);
+    }
+    if (!fromAccountId) {
+      const bank = paymentAccounts.find((a) => a.category === 'bank') ?? paymentAccounts[0];
+      if (bank) setFromAccountId(bank.id);
+    }
+  }, [expenseAccounts, fromAccountId, paymentAccounts, routeScanResult]);
 
   useEffect(() => {
     if (txType !== 'expense') {
