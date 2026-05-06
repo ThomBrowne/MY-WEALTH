@@ -38,6 +38,10 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleForgotPassword = () => {
+    Alert.alert(t('auth.forgotTitle'), t('auth.forgotBody'));
+  };
+
   return (
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={s.container} keyboardShouldPersistTaps="handled">
@@ -69,6 +73,9 @@ export default function LoginScreen({ navigation }: Props) {
             placeholderTextColor={COLORS.textLight}
             secureTextEntry
           />
+          <TouchableOpacity style={s.forgotLink} onPress={handleForgotPassword}>
+            <Text style={s.forgotText}>{t('auth.forgotPassword')}</Text>
+          </TouchableOpacity>
 
           {error ? (
             <View style={s.errorBox}>
@@ -124,6 +131,8 @@ const s = StyleSheet.create({
   link: { alignItems: 'center', marginTop: 16 },
   linkText: { fontSize: 14, color: COLORS.textMuted },
   linkBold: { color: COLORS.primary, fontWeight: '700' },
+  forgotLink: { alignSelf: 'flex-end', paddingVertical: 6 },
+  forgotText: { fontSize: 12, color: COLORS.primary, fontWeight: '700' },
   errorBox: {
     backgroundColor: COLORS.dangerBg,
     borderWidth: 1,

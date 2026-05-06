@@ -18,16 +18,22 @@ export default function RegisterScreen({ navigation }: Props) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password) {
+    if (!name.trim() || !email.trim() || !password || !passwordConfirm) {
       Alert.alert(t('common.error'), t('auth.allRequired'));
       return;
     }
     if (password.length < 6) {
       Alert.alert(t('common.error'), t('auth.passwordMin'));
+      return;
+    }
+    if (password !== passwordConfirm) {
+      Alert.alert(t('common.error'), t('auth.passwordMismatch'));
+      setError(t('auth.passwordMismatch'));
       return;
     }
     setLoading(true);
@@ -81,6 +87,16 @@ export default function RegisterScreen({ navigation }: Props) {
             value={password}
             onChangeText={setPassword}
             placeholder={t('auth.passwordPh')}
+            placeholderTextColor={COLORS.textLight}
+            secureTextEntry
+          />
+
+          <Text style={s.label}>{t('auth.passwordConfirm')}</Text>
+          <TextInput
+            style={s.input}
+            value={passwordConfirm}
+            onChangeText={setPasswordConfirm}
+            placeholder={t('auth.passwordConfirmPh')}
             placeholderTextColor={COLORS.textLight}
             secureTextEntry
           />
