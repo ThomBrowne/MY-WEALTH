@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -333,40 +333,42 @@ function RecentTransactions({ items }: { items: RecentTransaction[] }) {
 export default function DashboardScreen() {
   const navigation = useNavigation<any>();
   const { summary, recent, breakdown, loading, refreshing, error, load, refresh } = useDashboard();
+  const [showScanSource, setShowScanSource] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const goToAdvisor = useCallback(() => navigation.navigate('AI 코치'), [navigation]);
 
   const doScan = useCallback(async (uri: string, mimeType: string) => {
+    setScanning(true);
     try {
       const { data } = await receiptsApi.scan(uri, mimeType);
       navigation.navigate('거래', { screen: 'AddTxHome', params: { initialScanResult: data } });
     } catch (e: any) {
-      Alert.alert('스캔 오류', e?.response?.data?.detail ?? '영수증 스캔에 실패했습니다.');
+      Alert.alert('스캔 오류', e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
+    } finally {
+      setScanning(false);
     }
   }, [navigation]);
 
-  const handleQuickScan = useCallback(() => {
-    Alert.alert('영수증 스캔', '이미지 소스를 선택하세요', [
-      {
-        text: '📷 카메라',
-        onPress: async () => {
-          const { granted } = await ImagePicker.requestCameraPermissionsAsync();
-          if (!granted) { Alert.alert('권한 필요', '카메라 권한이 필요합니다.'); return; }
-          const res = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.85 });
-          if (!res.canceled) await doScan(res.assets[0].uri, res.assets[0].mimeType ?? 'image/jpeg');
-        },
-      },
-      {
-        text: '🖼️ 갤러리',
-        onPress: async () => {
-          const { granted } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (!granted) { Alert.alert('권한 필요', '갤러리 권한이 필요합니다.'); return; }
-          const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.85 });
-          if (!res.canceled) await doScan(res.assets[0].uri, res.assets[0].mimeType ?? 'image/jpeg');
-        },
-      },
-      { text: '취소', style: 'cancel' },
-    ]);
+  const pickReceipt = useCallback(async (fromCamera: boolean) => {
+    setShowScanSource(false);
+    const { granted } = fromCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!granted) {
+      Alert.alert('권한 필요', fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+      return;
+    }
+    const res = fromCamera
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.85 })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.85 });
+    if (!res.canceled && res.assets[0]) {
+      await doScan(res.assets[0].uri, res.assets[0].mimeType ?? 'image/jpeg');
+    }
   }, [doScan]);
+
+  const handleQuickScan = useCallback(() => {
+    setShowScanSource(true);
+  }, []);
 
   useFocusEffect(
     React.useCallback(() => { load(); }, [load])
@@ -402,12 +404,63 @@ export default function DashboardScreen() {
       <AssetsBreakdown breakdown={breakdown} />
       <RecentTransactions items={recent} />
       <View style={{ height: 100 }} />
+      <Modal visible={showScanSource} transparent animationType="fade" onRequestClose={() => setShowScanSource(false)}>
+        <View style={styles.scanOverlay}>
+          <View style={styles.scanSheet}>
+            <Text style={styles.scanTitle}>영수증 스캔</Text>
+            <Text style={styles.scanBody}>사진을 찍거나 앨범에서 영수증 이미지를 선택하세요.</Text>
+            <TouchableOpacity style={styles.scanPrimaryBtn} onPress={() => pickReceipt(true)} disabled={scanning}>
+              <Text style={styles.scanPrimaryText}>{scanning ? '분석 중...' : '카메라로 촬영'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.scanSecondaryBtn} onPress={() => pickReceipt(false)} disabled={scanning}>
+              <Text style={styles.scanSecondaryText}>앨범에서 선택</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.scanCancelBtn} onPress={() => setShowScanSource(false)} disabled={scanning}>
+              <Text style={styles.scanCancelText}>취소</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
+  scanOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  scanSheet: {
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 22,
+    paddingBottom: 34,
+  },
+  scanTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  scanBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 18 },
+  scanPrimaryBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  scanPrimaryText: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  scanSecondaryBtn: {
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  scanSecondaryText: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  scanCancelBtn: { paddingVertical: 10, alignItems: 'center' },
+  scanCancelText: { color: COLORS.textMuted, fontSize: 14, fontWeight: '700' },
 
   netWorthCard: {
     margin: 16, padding: 24,

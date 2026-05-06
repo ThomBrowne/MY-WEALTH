@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Share,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, Share, Modal,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { COLORS, formatAmount } from '../constants';
@@ -87,12 +87,10 @@ export default function SettingsScreen() {
   const [biometric, setBiometric] = useState(false);
   const [autoScan, setAutoScan] = useState(true);
   const [lang, setLang] = useState<Language>(currentLanguage());
+  const [showLogout, setShowLogout] = useState(false);
 
   const handleLogout = () => {
-    Alert.alert(t('settings.logoutTitle'), t('settings.logoutConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      { text: t('settings.logout'), style: 'destructive', onPress: logout },
-    ]);
+    setShowLogout(true);
   };
 
   const handleRegenerateInvite = async () => {
@@ -122,6 +120,7 @@ export default function SettingsScreen() {
   ];
 
   return (
+    <>
     <ScrollView style={styles.container}>
       {user && (
         <View style={styles.section}>
@@ -243,6 +242,29 @@ export default function SettingsScreen() {
         <Text style={styles.footerText}>{t('settings.poweredBy')}</Text>
       </View>
     </ScrollView>
+    <Modal visible={showLogout} transparent animationType="fade" onRequestClose={() => setShowLogout(false)}>
+      <View style={styles.confirmOverlay}>
+        <View style={styles.confirmBox}>
+          <Text style={styles.confirmTitle}>{t('settings.logoutTitle')}</Text>
+          <Text style={styles.confirmBody}>{t('settings.logoutConfirm')}</Text>
+          <View style={styles.confirmActions}>
+            <TouchableOpacity style={styles.confirmCancel} onPress={() => setShowLogout(false)}>
+              <Text style={styles.confirmCancelText}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.confirmDanger}
+              onPress={async () => {
+                setShowLogout(false);
+                await logout();
+              }}
+            >
+              <Text style={styles.confirmDangerText}>{t('settings.logout')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -322,4 +344,38 @@ const styles = StyleSheet.create({
 
   footer: { alignItems: 'center', paddingVertical: 24, gap: 4 },
   footerText: { fontSize: 12, color: COLORS.textLight },
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  confirmBox: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  confirmTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 8 },
+  confirmBody: { fontSize: 14, color: COLORS.textMuted, lineHeight: 21, marginBottom: 18 },
+  confirmActions: { flexDirection: 'row', gap: 10 },
+  confirmCancel: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  confirmCancelText: { fontSize: 14, fontWeight: '700', color: COLORS.textMuted },
+  confirmDanger: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    backgroundColor: COLORS.danger,
+  },
+  confirmDangerText: { fontSize: 14, fontWeight: '800', color: '#fff' },
 });
