@@ -306,15 +306,24 @@ export interface ReceiptScanResult {
 }
 
 export const receiptsApi = {
-  scan: (imageUri: string, mimeType: string) => {
+  scan: async (imageUri: string, mimeType: string) => {
     const formData = new FormData();
-    formData.append('file', {
-      uri: imageUri,
-      type: mimeType,
-      name: 'receipt.jpg',
-    } as any);
+
+    if (Platform.OS === 'web') {
+      const imageRes = await fetch(imageUri);
+      const blob = await imageRes.blob();
+      const type = blob.type || mimeType || 'image/jpeg';
+      const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg';
+      formData.append('file', blob, `receipt.${ext}`);
+    } else {
+      formData.append('file', {
+        uri: imageUri,
+        type: mimeType,
+        name: 'receipt.jpg',
+      } as any);
+    }
+
     return api.post<ReceiptScanResult>('/receipts/scan', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 30000,
     });
   },

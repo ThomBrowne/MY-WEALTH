@@ -52,7 +52,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
       setShowPreview(false);
       onResult(res.data);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? '영수증 스캔에 실패했습니다.';
+      const msg = e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.';
       Alert.alert('스캔 오류', msg);
       setShowPreview(false);
     } finally {
