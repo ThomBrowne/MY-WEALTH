@@ -10,7 +10,9 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: CORS_ORIGINS
-        value: "*"
+        value: https://my-wealth-web.onrender.com
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-sonnet-20241022
 
   - type: web
     name: my-wealth-web
@@ -20,4 +22,4 @@ services:
     staticPublishPath: dist
     envVars:
       - key: EXPO_PUBLIC_API_BASE_URL
-        value: https://my-wealth-api.onrender.com/api/v1
+        value: https://my-wealth-api-chky.onrender.com/api/v1
