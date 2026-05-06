@@ -4,6 +4,7 @@ import {
   StyleSheet, ActivityIndicator, Animated,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { accountsApi, transactionsApi, classifyApi, Account, ReceiptScanResult, Transaction } from '../services/api';
 import { ReceiptScanButton } from '../components/ReceiptScanner';
@@ -11,6 +12,7 @@ import SmsImportButton from '../components/SmsImportButton';
 import { ParsedCardSms } from '../services/smsReader';
 import { LoadingView } from '../components/LoadingView';
 import { COLORS, CATEGORY_LABELS } from '../constants';
+import { consumePendingReceiptScan } from '../services/pendingReceiptScan';
 
 type Props = NativeStackScreenProps<any, 'AddTransactionHome'>;
 type TxType = 'expense' | 'income' | 'transfer';
@@ -566,22 +568,31 @@ export default function AddTransactionScreen({ navigation, route }: Props) {
     [accounts],
   );
 
-  useEffect(() => {
-    if (!routeScanResult) return;
+  const applyReceiptScan = useCallback((scan: ReceiptScanResult) => {
     setTxType('expense');
-    if (routeScanResult.description) setDescription(routeScanResult.description);
-    if (routeScanResult.amount != null) setAmountRaw(String(Math.round(routeScanResult.amount)));
-    setScanResult(routeScanResult);
-    if (routeScanResult.category) {
-      const matched = expenseAccounts.find((a) => a.category === routeScanResult.category);
-      setSelectedCat(routeScanResult.category);
+    if (scan.description || scan.merchant) setDescription(scan.description ?? scan.merchant ?? '');
+    if (scan.amount != null) setAmountRaw(String(Math.round(scan.amount)));
+    setScanResult(scan);
+    if (scan.category) {
+      setSelectedCat(scan.category);
+      const matched = expenseAccounts.find((a) => a.category === scan.category);
       if (matched) setToAccountId(matched.id);
     }
     if (!fromAccountId) {
       const bank = paymentAccounts.find((a) => a.category === 'bank') ?? paymentAccounts[0];
       if (bank) setFromAccountId(bank.id);
     }
-  }, [expenseAccounts, fromAccountId, paymentAccounts, routeScanResult]);
+  }, [expenseAccounts, fromAccountId, paymentAccounts]);
+
+  useEffect(() => {
+    if (!routeScanResult) return;
+    applyReceiptScan(routeScanResult);
+  }, [applyReceiptScan, routeScanResult]);
+
+  useFocusEffect(useCallback(() => {
+    const pendingScan = consumePendingReceiptScan();
+    if (pendingScan) applyReceiptScan(pendingScan);
+  }, [applyReceiptScan]));
 
   useEffect(() => {
     if (txType !== 'expense') {
@@ -690,18 +701,8 @@ export default function AddTransactionScreen({ navigation, route }: Props) {
 
   // 영수증 스캔 결과 적용
   const handleScanResult = useCallback((r: ReceiptScanResult) => {
-    setScanResult(r);
-    if (r.description) setDescription(r.description);
-    if (r.amount != null) setAmountRaw(String(Math.round(r.amount)));
-    if (r.category) {
-      const cat = EXPENSE_CATS.find(c => c.key === r.category);
-      if (cat) handleCatSelect(cat.key);
-    }
-    if (!fromAccountId) {
-      const bank = paymentAccounts.find(a => a.category === 'bank');
-      if (bank) setFromAccountId(bank.id);
-    }
-  }, [fromAccountId, paymentAccounts, handleCatSelect]);
+    applyReceiptScan(r);
+  }, [applyReceiptScan]);
 
   const meta = { color: TX_COLORS[txType].color, icon: TX_ICONS[txType] };
 

@@ -8,6 +8,7 @@ import { LoadingView, ErrorView } from '../components/LoadingView';
 import { COLORS, CATEGORY_LABELS, INSIGHT_COLORS, formatAmount, formatDate } from '../constants';
 import { advisorApi, receiptsApi, AdvisorInsight, ReceiptScanResult } from '../services/api';
 import type { RecentTransaction } from '../services/api';
+import { setPendingReceiptScan } from '../services/pendingReceiptScan';
 
 interface BreakdownItem {
   category: string;
@@ -341,7 +342,8 @@ export default function DashboardScreen() {
     setScanning(true);
     try {
       const { data } = await receiptsApi.scan(uri, mimeType);
-      navigation.navigate('거래', { initialScanResult: data });
+      setPendingReceiptScan(data);
+      navigation.navigate('거래');
     } catch (e: any) {
       Alert.alert('스캔 오류', e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
     } finally {
