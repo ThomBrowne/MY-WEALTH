@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { advisorApi, AdvisorMessage } from '../services/api';
 import { COLORS } from '../constants';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export default function FloatingAIButton() {
   const [visible, setVisible] = useState(false);
@@ -55,7 +56,7 @@ export default function FloatingAIButton() {
       const res = await advisorApi.chat(next);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.data.reply }]);
     } catch (e: any) {
-      const detail = e?.response?.data?.detail ?? '잠시 후 다시 시도해주세요.';
+      const detail = getApiErrorMessage(e, '잠시 후 다시 시도해주세요.');
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: `오류: ${detail}` },

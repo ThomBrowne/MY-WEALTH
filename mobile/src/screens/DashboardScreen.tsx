@@ -9,6 +9,7 @@ import { COLORS, CATEGORY_LABELS, INSIGHT_COLORS, formatAmount, formatDate } fro
 import { advisorApi, receiptsApi, AdvisorInsight, ReceiptScanResult } from '../services/api';
 import type { RecentTransaction } from '../services/api';
 import { setPendingReceiptScan } from '../services/pendingReceiptScan';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface BreakdownItem {
   category: string;
@@ -347,7 +348,7 @@ export default function DashboardScreen() {
       setPendingReceiptScan(data);
       navigation.navigate('거래');
     } catch (e: any) {
-      setScanError(e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
+      setScanError(getApiErrorMessage(e, '영수증 스캔에 실패했습니다.'));
     } finally {
       setScanning(false);
     }
@@ -372,7 +373,7 @@ export default function DashboardScreen() {
       }
     } catch (e: any) {
       setScanning(false);
-      setScanError(e?.message ?? '사진을 불러오는 중 오류가 발생했습니다.');
+      setScanError(getApiErrorMessage(e, '사진을 불러오는 중 오류가 발생했습니다.'));
     }
   }, [doScan]);
 

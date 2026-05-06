@@ -6,6 +6,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { receiptsApi, ReceiptScanResult } from '../services/api';
 import { COLORS } from '../constants';
+import { getApiErrorMessage } from '../utils/apiError';
 
 interface Props {
   onResult: (result: ReceiptScanResult) => void;
@@ -57,8 +58,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
       setShowPreview(false);
       onResult(res.data);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.';
-      setScanError(msg);
+      setScanError(getApiErrorMessage(e, '영수증 스캔에 실패했습니다.'));
       setShowPreview(true);
     } finally {
       setScanning(false);

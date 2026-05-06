@@ -3,9 +3,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# .env 로드 — backend/.env 우선, 없으면 상위 trading/.env
 try:
     from dotenv import load_dotenv
+
     _env = Path(__file__).parent / ".env"
     if not _env.exists():
         _env = Path(__file__).parent.parent / ".env"
@@ -14,7 +14,7 @@ except ImportError:
     pass
 
 from db.database import init_database
-from api.routes import accounts, transactions, dashboard, investments, classify, budget, receipts, currencies, advisor, auth, households
+from api.router import include_api_routes
 
 init_database()
 
@@ -39,17 +39,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(households.router, prefix="/api/v1")
-app.include_router(accounts.router, prefix="/api/v1")
-app.include_router(transactions.router, prefix="/api/v1")
-app.include_router(dashboard.router, prefix="/api/v1")
-app.include_router(investments.router, prefix="/api/v1")
-app.include_router(classify.router, prefix="/api/v1")
-app.include_router(budget.router, prefix="/api/v1")
-app.include_router(receipts.router, prefix="/api/v1")
-app.include_router(currencies.router, prefix="/api/v1")
-app.include_router(advisor.router, prefix="/api/v1")
+include_api_routes(app)
 
 
 @app.get("/")

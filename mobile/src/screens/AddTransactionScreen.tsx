@@ -13,6 +13,7 @@ import { ParsedCardSms } from '../services/smsReader';
 import { LoadingView } from '../components/LoadingView';
 import { COLORS, CATEGORY_LABELS } from '../constants';
 import { consumePendingReceiptScan } from '../services/pendingReceiptScan';
+import { getApiErrorMessage } from '../utils/apiError';
 
 type Props = NativeStackScreenProps<any, 'AddTransactionHome'>;
 type TxType = 'expense' | 'income' | 'transfer';
@@ -736,7 +737,7 @@ export default function AddTransactionScreen({ navigation, route }: Props) {
       setScanResult(null); setDateMode('today');
       navigation.goBack();
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? t('tx.failed'));
+      setError(getApiErrorMessage(e, t('tx.failed')));
     } finally {
       setSubmitting(false);
     }

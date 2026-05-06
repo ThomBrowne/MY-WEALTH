@@ -9,6 +9,7 @@ import { AuthStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
 import { BASE_URL } from '../services/api';
+import { getApiErrorMessage } from '../utils/apiError';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Register'> };
 
@@ -41,7 +42,7 @@ export default function RegisterScreen({ navigation }: Props) {
     try {
       await register(name.trim(), email.trim().toLowerCase(), password);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? t('auth.registerFailed');
+      const msg = getApiErrorMessage(e, t('auth.registerFailed'));
       setError(msg);
       Alert.alert(t('common.error'), msg);
     } finally {

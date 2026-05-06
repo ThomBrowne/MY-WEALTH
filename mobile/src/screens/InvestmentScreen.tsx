@@ -15,6 +15,7 @@ import {
 import { LoadingView, ErrorView } from '../components/LoadingView';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { COLORS, formatAmount } from '../constants';
+import { getApiErrorMessage } from '../utils/apiError';
 
 // ─── 상수 ────────────────────────────────────────────────────────────────────
 
@@ -783,7 +784,7 @@ export default function InvestmentScreen() {
       setShowAddModal(false);
       await load(true);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? t('inv.addError');
+      const msg = getApiErrorMessage(e, t('inv.addError'));
       Alert.alert(t('common.error'), msg);
     } finally {
       setSaving(false);
@@ -800,7 +801,7 @@ export default function InvestmentScreen() {
             await investmentsApi.deleteAccount(accountId);
             await load(true);
           } catch (e: any) {
-            Alert.alert(t('common.error'), e?.response?.data?.detail ?? t('inv.deleteError'));
+            Alert.alert(t('common.error'), getApiErrorMessage(e, t('inv.deleteError')));
           }
         },
       },

@@ -9,6 +9,7 @@ import { AuthStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
 import { BASE_URL } from '../services/api';
+import { getApiErrorMessage } from '../utils/apiError';
 
 type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'> };
 
@@ -30,7 +31,7 @@ export default function LoginScreen({ navigation }: Props) {
     try {
       await login(email.trim().toLowerCase(), password);
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? e?.message ?? t('auth.loginFailed');
+      const msg = getApiErrorMessage(e, t('auth.loginFailed'));
       setError(msg);
       Alert.alert(t('auth.loginFailedTitle'), msg);
     } finally {

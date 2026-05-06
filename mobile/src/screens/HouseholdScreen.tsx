@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { householdsApi } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
+import { getApiErrorMessage } from '../utils/apiError';
 
 export default function HouseholdScreen() {
   const { t } = useTranslation();
@@ -26,7 +27,7 @@ export default function HouseholdScreen() {
       await householdsApi.create(householdName.trim());
       await refreshHousehold();
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? t('household.createFailed');
+      const msg = getApiErrorMessage(e, t('household.createFailed'));
       Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);
@@ -43,7 +44,7 @@ export default function HouseholdScreen() {
       await householdsApi.join(inviteCode.trim().toUpperCase());
       await refreshHousehold();
     } catch (e: any) {
-      const msg = e?.response?.data?.detail ?? t('household.joinFailed');
+      const msg = getApiErrorMessage(e, t('household.joinFailed'));
       Alert.alert(t('common.error'), msg);
     } finally {
       setLoading(false);

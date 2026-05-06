@@ -7,6 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { advisorApi, AdvisorMessage, AdvisorInsight } from '../services/api';
 import { COLORS, INSIGHT_COLORS } from '../constants';
+import { getApiErrorMessage } from '../utils/apiError';
 
 // ─── 서브 컴포넌트 (React.memo) ───────────────────────────────────────────────
 const InsightCard = React.memo(function InsightCard({ insight }: { insight: AdvisorInsight }) {
@@ -103,7 +104,7 @@ export default function AIAdvisorScreen() {
       const res = await advisorApi.chat(newMessages);
       setMessages((prev) => [...prev, { role: 'assistant', content: res.data.reply }]);
     } catch (e: any) {
-      const errMsg = e?.response?.data?.detail ?? t('ai.retry');
+      const errMsg = getApiErrorMessage(e, t('ai.retry'));
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: t('ai.errorMsg', { msg: errMsg }) },
