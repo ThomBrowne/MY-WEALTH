@@ -354,20 +354,25 @@ export default function DashboardScreen() {
   }, [navigation]);
 
   const pickReceipt = useCallback(async (fromCamera: boolean) => {
-    setShowScanSource(false);
-    setScanError('');
-    const { granted } = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!granted) {
-      setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
-      return;
-    }
-    const res = fromCamera
-      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.85 })
-      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.85 });
-    if (!res.canceled && res.assets[0]) {
-      await doScan(res.assets[0].uri, res.assets[0].mimeType ?? 'image/jpeg');
+    try {
+      setShowScanSource(false);
+      setScanError('');
+      const { granted } = fromCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!granted) {
+        setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+        return;
+      }
+      const res = fromCamera
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'] as any, quality: 0.85 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] as any, quality: 0.85 });
+      if (!res.canceled && res.assets[0]) {
+        await doScan(res.assets[0].uri, res.assets[0].mimeType ?? 'image/jpeg');
+      }
+    } catch (e: any) {
+      setScanning(false);
+      setScanError(e?.message ?? '사진을 불러오는 중 오류가 발생했습니다.');
     }
   }, [doScan]);
 

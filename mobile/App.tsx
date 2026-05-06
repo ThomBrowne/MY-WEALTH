@@ -1,5 +1,5 @@
 import './src/i18n';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, ActivityIndicator, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +24,63 @@ import FloatingAIButton from './src/components/FloatingAIButton';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+
+type CrashBoundaryState = { error: Error | null };
+
+class CrashBoundary extends React.Component<React.PropsWithChildren, CrashBoundaryState> {
+  state: CrashBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  render() {
+    if (this.state.error) {
+      return <CrashFallback message={this.state.error.message || '앱 화면을 표시하는 중 오류가 발생했습니다.'} />;
+    }
+    return this.props.children;
+  }
+}
+
+function CrashFallback({ message }: { message: string }) {
+  return (
+    <View style={crashStyles.wrap}>
+      <Text style={crashStyles.title}>앱 오류</Text>
+      <Text style={crashStyles.body}>{message}</Text>
+      <Text style={crashStyles.hint}>Safari에서 새로고침 후 다시 시도해주세요.</Text>
+    </View>
+  );
+}
+
+function RuntimeErrorOverlay() {
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    const onError = (event: ErrorEvent) => setMessage(event.message || '브라우저 오류가 발생했습니다.');
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      setMessage(reason?.response?.data?.detail ?? reason?.message ?? String(reason ?? '요청 처리 중 오류가 발생했습니다.'));
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection);
+    };
+  }, []);
+
+  if (!message) return null;
+  return (
+    <View style={crashStyles.overlay}>
+      <Text style={crashStyles.title}>앱 오류</Text>
+      <Text style={crashStyles.body}>{message}</Text>
+      <TouchableOpacity style={crashStyles.button} onPress={() => setMessage('')}>
+        <Text style={crashStyles.buttonText}>닫기</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 const HEADER_STYLE = {
   headerStyle: { backgroundColor: COLORS.primaryDark },
@@ -204,11 +261,50 @@ function AppInner() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppInner />
-    </AuthProvider>
+    <CrashBoundary>
+      <AuthProvider>
+        <AppInner />
+        <RuntimeErrorOverlay />
+      </AuthProvider>
+    </CrashBoundary>
   );
 }
+
+const crashStyles = StyleSheet.create({
+  wrap: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  overlay: {
+    position: 'absolute',
+    left: 18,
+    right: 18,
+    bottom: 24,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.danger,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  title: { fontSize: 18, fontWeight: '800', color: COLORS.danger, marginBottom: 8 },
+  body: { fontSize: 14, color: COLORS.text, lineHeight: 20, marginBottom: 8 },
+  hint: { fontSize: 12, color: COLORS.textMuted, lineHeight: 18 },
+  button: {
+    marginTop: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  buttonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+});
 
 const webShell = StyleSheet.create({
   outer: {

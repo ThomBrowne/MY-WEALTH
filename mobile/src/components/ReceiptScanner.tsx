@@ -20,38 +20,38 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
   const [scanError, setScanError] = useState('');
 
   const pickImage = async (fromCamera: boolean) => {
-    setShowSource(false);
-    setScanError('');
-    const perm = fromCamera
-      ? await ImagePicker.requestCameraPermissionsAsync()
-      : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!perm.granted) {
-      setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
-      setShowPreview(true);
-      return;
-    }
-
-    const result = fromCamera
-      ? await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          quality: 0.85,
-          allowsEditing: true,
-        })
-      : await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          quality: 0.85,
-          allowsEditing: true,
-        });
-
-    if (result.canceled || !result.assets[0]) return;
-
-    const asset = result.assets[0];
-    setPreview(asset.uri);
-    setShowPreview(true);
-
-    setScanning(true);
     try {
+      setShowSource(false);
+      setScanError('');
+      const perm = fromCamera
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!perm.granted) {
+        setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+        setPreview(null);
+        setShowPreview(true);
+        return;
+      }
+
+      const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+            allowsEditing: true,
+          })
+        : await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            quality: 0.85,
+            allowsEditing: true,
+          });
+
+      if (result.canceled || !result.assets[0]) return;
+
+      const asset = result.assets[0];
+      setPreview(asset.uri);
+      setShowPreview(true);
+      setScanning(true);
       const mimeType = asset.mimeType ?? 'image/jpeg';
       const res = await receiptsApi.scan(asset.uri, mimeType);
       setShowPreview(false);
@@ -59,6 +59,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.';
       setScanError(msg);
+      setShowPreview(true);
     } finally {
       setScanning(false);
     }
