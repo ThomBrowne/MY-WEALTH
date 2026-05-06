@@ -305,13 +305,42 @@ export interface ReceiptScanResult {
   confidence: number;
 }
 
+async function blobToJpegFile(blob: Blob) {
+  if (typeof document === 'undefined') return blob;
+  if (blob.type === 'image/jpeg' || blob.type === 'image/png' || blob.type === 'image/webp') return blob;
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = document.createElement('img');
+      image.onload = () => resolve(image);
+      image.onerror = reject;
+      image.src = objectUrl;
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return blob;
+    ctx.drawImage(img, 0, 0);
+
+    return await new Promise<Blob>((resolve) => {
+      canvas.toBlob((jpeg) => resolve(jpeg ?? blob), 'image/jpeg', 0.88);
+    });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export const receiptsApi = {
   scan: async (imageUri: string, mimeType: string) => {
     const formData = new FormData();
 
     if (Platform.OS === 'web') {
       const imageRes = await fetch(imageUri);
-      const blob = await imageRes.blob();
+      const originalBlob = await imageRes.blob();
+      const blob = await blobToJpegFile(originalBlob);
       const type = blob.type || mimeType || 'image/jpeg';
       const ext = type.includes('png') ? 'png' : type.includes('webp') ? 'webp' : 'jpg';
       formData.append('file', blob, `receipt.${ext}`);
