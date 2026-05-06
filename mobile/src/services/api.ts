@@ -353,7 +353,7 @@ export const receiptsApi = {
     }
 
     return api.post<ReceiptScanResult>('/receipts/scan', formData, {
-      timeout: 30000,
+      timeout: 60000,
     });
   },
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, StyleSheet,
-  ActivityIndicator, Alert, Image,
+  ActivityIndicator, Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { receiptsApi, ReceiptScanResult } from '../services/api';
@@ -17,15 +17,18 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
   const [preview, setPreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showSource, setShowSource] = useState(false);
+  const [scanError, setScanError] = useState('');
 
   const pickImage = async (fromCamera: boolean) => {
     setShowSource(false);
+    setScanError('');
     const perm = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (!perm.granted) {
-      Alert.alert('권한 필요', fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+      setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+      setShowPreview(true);
       return;
     }
 
@@ -55,8 +58,7 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
       onResult(res.data);
     } catch (e: any) {
       const msg = e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.';
-      Alert.alert('스캔 오류', msg);
-      setShowPreview(false);
+      setScanError(msg);
     } finally {
       setScanning(false);
     }
@@ -103,6 +105,15 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
                   <Text style={styles.scanningText}>Claude AI가 영수증을 분석 중...</Text>
                 </View>
               )}
+              {!!scanError && (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorTitle}>스캔 오류</Text>
+                  <Text style={styles.errorText}>{scanError}</Text>
+                  <TouchableOpacity style={styles.errorButton} onPress={() => { setScanError(''); setShowPreview(false); }}>
+                    <Text style={styles.errorButtonText}>확인</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           </View>
         </Modal>
@@ -129,6 +140,15 @@ export function ReceiptScanButton({ onResult, compact }: Props) {
               <View style={styles.scanningRow}>
                 <ActivityIndicator color={COLORS.primary} size="small" />
                 <Text style={styles.scanningText}>Claude AI가 영수증을 분석 중...</Text>
+              </View>
+            )}
+            {!!scanError && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorTitle}>스캔 오류</Text>
+                <Text style={styles.errorText}>{scanError}</Text>
+                <TouchableOpacity style={styles.errorButton} onPress={() => { setScanError(''); setShowPreview(false); }}>
+                  <Text style={styles.errorButtonText}>확인</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -175,6 +195,21 @@ const styles = StyleSheet.create({
     padding: 16, backgroundColor: COLORS.bg,
   },
   scanningText: { fontSize: 14, color: COLORS.textMuted, flex: 1 },
+  errorBox: {
+    padding: 16,
+    backgroundColor: COLORS.bg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  errorTitle: { fontSize: 15, fontWeight: '800', color: COLORS.danger, marginBottom: 6 },
+  errorText: { fontSize: 13, color: COLORS.danger, lineHeight: 19, marginBottom: 12 },
+  errorButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: 'center',
+  },
+  errorButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   sourceOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',

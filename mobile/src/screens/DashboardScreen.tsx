@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ActivityIndicator, Alert, Modal } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -336,16 +336,18 @@ export default function DashboardScreen() {
   const { summary, recent, breakdown, loading, refreshing, error, load, refresh } = useDashboard();
   const [showScanSource, setShowScanSource] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
   const goToAdvisor = useCallback(() => navigation.navigate('AI 코치'), [navigation]);
 
   const doScan = useCallback(async (uri: string, mimeType: string) => {
+    setScanError('');
     setScanning(true);
     try {
       const { data } = await receiptsApi.scan(uri, mimeType);
       setPendingReceiptScan(data);
       navigation.navigate('거래');
     } catch (e: any) {
-      Alert.alert('스캔 오류', e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
+      setScanError(e?.response?.data?.detail ?? e?.message ?? '영수증 스캔에 실패했습니다.');
     } finally {
       setScanning(false);
     }
@@ -353,11 +355,12 @@ export default function DashboardScreen() {
 
   const pickReceipt = useCallback(async (fromCamera: boolean) => {
     setShowScanSource(false);
+    setScanError('');
     const { granted } = fromCamera
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!granted) {
-      Alert.alert('권한 필요', fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
+      setScanError(fromCamera ? '카메라 권한이 필요합니다.' : '갤러리 권한이 필요합니다.');
       return;
     }
     const res = fromCamera
@@ -381,31 +384,33 @@ export default function DashboardScreen() {
   if (error) return <ErrorView message={error} onRetry={() => load()} />;
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={COLORS.primary} />}
-    >
-      <NetWorthCard
-        netWorth={summary?.net_worth ?? 0}
-        assets={summary?.assets ?? 0}
-        liabilities={summary?.liabilities ?? 0}
-      />
-      <DailyReportCard
-        revenue={summary?.this_month.revenue ?? 0}
-        expense={summary?.this_month.expense ?? 0}
-        savings={summary?.this_month.savings ?? 0}
-        netWorth={summary?.net_worth ?? 0}
-      />
-      <QuickScanCard onPress={handleQuickScan} />
-      <AIInsightsBanner onPress={goToAdvisor} />
-      <MonthSummary
-        revenue={summary?.this_month.revenue ?? 0}
-        expense={summary?.this_month.expense ?? 0}
-        savings={summary?.this_month.savings ?? 0}
-      />
-      <AssetsBreakdown breakdown={breakdown} />
-      <RecentTransactions items={recent} />
-      <View style={{ height: 100 }} />
+    <>
+      <ScrollView
+        style={styles.container}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={COLORS.primary} />}
+      >
+        <NetWorthCard
+          netWorth={summary?.net_worth ?? 0}
+          assets={summary?.assets ?? 0}
+          liabilities={summary?.liabilities ?? 0}
+        />
+        <DailyReportCard
+          revenue={summary?.this_month.revenue ?? 0}
+          expense={summary?.this_month.expense ?? 0}
+          savings={summary?.this_month.savings ?? 0}
+          netWorth={summary?.net_worth ?? 0}
+        />
+        <QuickScanCard onPress={handleQuickScan} />
+        <AIInsightsBanner onPress={goToAdvisor} />
+        <MonthSummary
+          revenue={summary?.this_month.revenue ?? 0}
+          expense={summary?.this_month.expense ?? 0}
+          savings={summary?.this_month.savings ?? 0}
+        />
+        <AssetsBreakdown breakdown={breakdown} />
+        <RecentTransactions items={recent} />
+        <View style={{ height: 100 }} />
+      </ScrollView>
       <Modal visible={showScanSource} transparent animationType="fade" onRequestClose={() => setShowScanSource(false)}>
         <View style={styles.scanOverlay}>
           <View style={styles.scanSheet}>
@@ -423,7 +428,28 @@ export default function DashboardScreen() {
           </View>
         </View>
       </Modal>
-    </ScrollView>
+      <Modal visible={scanning || !!scanError} transparent animationType="fade" onRequestClose={() => !scanning && setScanError('')}>
+        <View style={styles.scanOverlay}>
+          <View style={styles.scanSheet}>
+            {scanning ? (
+              <>
+                <ActivityIndicator color={COLORS.primary} size="large" />
+                <Text style={styles.scanTitleCenter}>영수증 분석 중</Text>
+                <Text style={styles.scanBodyCenter}>사진을 업로드하고 금액, 날짜, 상점을 읽고 있어요.</Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.scanTitle}>스캔 오류</Text>
+                <Text style={styles.scanErrorText}>{scanError}</Text>
+                <TouchableOpacity style={styles.scanPrimaryBtn} onPress={() => setScanError('')}>
+                  <Text style={styles.scanPrimaryText}>확인</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -443,6 +469,18 @@ const styles = StyleSheet.create({
   },
   scanTitle: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
   scanBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 18 },
+  scanTitleCenter: { fontSize: 18, fontWeight: '800', color: COLORS.text, marginTop: 14, marginBottom: 6, textAlign: 'center' },
+  scanBodyCenter: { fontSize: 13, color: COLORS.textMuted, lineHeight: 20, marginBottom: 8, textAlign: 'center' },
+  scanErrorText: {
+    backgroundColor: COLORS.dangerBg,
+    borderWidth: 1,
+    borderColor: '#fecaca',
+    color: COLORS.danger,
+    borderRadius: 12,
+    padding: 12,
+    lineHeight: 19,
+    marginBottom: 14,
+  },
   scanPrimaryBtn: {
     backgroundColor: COLORS.primary,
     borderRadius: 12,

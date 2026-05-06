@@ -96,7 +96,7 @@ async def scan_receipt(file: UploadFile = File(...)):
         image_b64 = base64.standard_b64encode(image_data).decode()
 
         message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"),
             max_tokens=512,
             messages=[
                 {
