@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert, Modal,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -15,10 +15,15 @@ type Props = { navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'
 
 export default function LoginScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [resetName, setResetName] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showReset, setShowReset] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
@@ -40,7 +45,39 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(t('auth.forgotTitle'), t('auth.forgotBody'));
+    setShowReset(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!email.trim() || !resetName.trim() || !resetNewPassword || !resetConfirm) {
+      Alert.alert(t('common.error'), t('auth.allRequired'));
+      return;
+    }
+    if (resetNewPassword.length < 6) {
+      Alert.alert(t('common.error'), t('auth.passwordMin'));
+      return;
+    }
+    if (resetNewPassword !== resetConfirm) {
+      Alert.alert(t('common.error'), t('auth.passwordMismatch'));
+      return;
+    }
+
+    setResetLoading(true);
+    setError('');
+    try {
+      await resetPassword(email.trim().toLowerCase(), resetName.trim(), resetNewPassword);
+      setShowReset(false);
+      setPassword('');
+      setResetName('');
+      setResetNewPassword('');
+      setResetConfirm('');
+    } catch (e: any) {
+      const msg = getApiErrorMessage(e, t('auth.resetFailed'));
+      setError(msg);
+      Alert.alert(t('common.error'), msg);
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   return (
@@ -98,6 +135,69 @@ export default function LoginScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <Modal visible={showReset} transparent animationType="fade" onRequestClose={() => setShowReset(false)}>
+        <View style={s.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={s.modalWrap}>
+            <View style={s.modalBox}>
+              <Text style={s.modalTitle}>{t('auth.forgotTitle')}</Text>
+              <Text style={s.modalBody}>{t('auth.forgotBody')}</Text>
+
+              <Text style={s.label}>{t('auth.email')}</Text>
+              <TextInput
+                style={s.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="email@example.com"
+                placeholderTextColor={COLORS.textLight}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                editable={!resetLoading}
+              />
+
+              <Text style={s.label}>{t('auth.resetName')}</Text>
+              <TextInput
+                style={s.input}
+                value={resetName}
+                onChangeText={setResetName}
+                placeholder={t('auth.resetNamePh')}
+                placeholderTextColor={COLORS.textLight}
+                autoCorrect={false}
+                editable={!resetLoading}
+              />
+
+              <Text style={s.label}>{t('auth.resetNewPassword')}</Text>
+              <TextInput
+                style={s.input}
+                value={resetNewPassword}
+                onChangeText={setResetNewPassword}
+                placeholder={t('auth.passwordPh')}
+                placeholderTextColor={COLORS.textLight}
+                secureTextEntry
+                editable={!resetLoading}
+              />
+
+              <Text style={s.label}>{t('auth.resetNewPasswordConfirm')}</Text>
+              <TextInput
+                style={s.input}
+                value={resetConfirm}
+                onChangeText={setResetConfirm}
+                placeholder={t('auth.passwordConfirmPh')}
+                placeholderTextColor={COLORS.textLight}
+                secureTextEntry
+                editable={!resetLoading}
+              />
+
+              <TouchableOpacity style={s.btn} onPress={handleResetPassword} disabled={resetLoading}>
+                {resetLoading ? <ActivityIndicator color="#fff" /> : <Text style={s.btnText}>{t('auth.resetSubmit')}</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={s.modalCancel} onPress={() => setShowReset(false)} disabled={resetLoading}>
+                <Text style={s.modalCancelText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -145,4 +245,22 @@ const s = StyleSheet.create({
   },
   errorText: { color: COLORS.danger, fontSize: 13, fontWeight: '700', lineHeight: 18 },
   apiText: { color: COLORS.textLight, fontSize: 10, marginTop: 4 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modalWrap: { width: '100%' },
+  modalBox: {
+    backgroundColor: COLORS.bg,
+    borderRadius: 18,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: COLORS.text, marginBottom: 6 },
+  modalBody: { fontSize: 13, color: COLORS.textMuted, lineHeight: 19, marginBottom: 10 },
+  modalCancel: { alignItems: 'center', paddingVertical: 12 },
+  modalCancelText: { fontSize: 14, fontWeight: '700', color: COLORS.textMuted },
 });

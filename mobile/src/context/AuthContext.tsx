@@ -11,6 +11,7 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  resetPassword: (email: string, name: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshHousehold: () => Promise<void>;
 }
@@ -68,6 +69,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user, household: null, loading: false });
   }, []);
 
+  const resetPassword = useCallback(async (email: string, name: string, newPassword: string) => {
+    await authStorage.clearTokens();
+    const { data } = await authApi.resetPassword(email, name, newPassword);
+    await authStorage.saveTokens(data.access_token, data.refresh_token);
+    const { data: user } = await authApi.meWithToken(data.access_token);
+    let household: HouseholdInfo | null = null;
+    try {
+      const res = await householdsApi.me();
+      household = res.data;
+    } catch {}
+    setState({ user, household, loading: false });
+  }, []);
+
   const logout = useCallback(async () => {
     await authStorage.clearTokens();
     setState({ user: null, household: null, loading: false });
@@ -81,8 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ ...state, login, register, logout, refreshHousehold }),
-    [state, login, register, logout, refreshHousehold],
+    () => ({ ...state, login, register, resetPassword, logout, refreshHousehold }),
+    [state, login, register, resetPassword, logout, refreshHousehold],
   );
 
   return (

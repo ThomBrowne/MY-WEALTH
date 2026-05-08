@@ -26,6 +26,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    name: str
+    new_password: str
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
@@ -44,14 +50,15 @@ class UserResponse(BaseModel):
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    email = body.email.lower().strip()
     if len(body.password) < 6:
         raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
-    if db.query(User).filter(User.email == body.email.lower()).first():
+    if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=409, detail="이미 사용 중인 이메일입니다.")
 
     user = User(
         id=str(uuid4()),
-        email=body.email.lower().strip(),
+        email=email,
         password_hash=hash_password(body.password),
         name=body.name.strip(),
     )
@@ -66,9 +73,29 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == body.email.lower()).first()
+    email = body.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
+
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+    )
+
+
+@router.post("/password-reset", response_model=TokenResponse)
+def reset_password(body: PasswordResetRequest, db: Session = Depends(get_db)):
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
+
+    email = body.email.lower().strip()
+    user = db.query(User).filter(User.email == email).first()
+    if not user or user.name.strip() != body.name.strip():
+        raise HTTPException(status_code=404, detail="이메일과 이름이 일치하는 계정을 찾을 수 없습니다.")
+
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
 
     return TokenResponse(
         access_token=create_access_token(user.id),

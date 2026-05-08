@@ -441,6 +441,8 @@ export const authApi = {
     publicApi.post<TokenResponse>('/auth/register', { name, email, password }),
   login: (email: string, password: string) =>
     publicApi.post<TokenResponse>('/auth/login', { email, password }),
+  resetPassword: (email: string, name: string, newPassword: string) =>
+    publicApi.post<TokenResponse>('/auth/password-reset', { email, name, new_password: newPassword }),
   me: () => api.get<UserInfo>('/auth/me'),
   meWithToken: (token: string) =>
     publicApi.get<UserInfo>('/auth/me', { headers: { Authorization: `Bearer ${token}` } }),
