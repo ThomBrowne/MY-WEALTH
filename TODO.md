@@ -1,5 +1,16 @@
 # TODO
 
+## Product Direction
+
+- Reframe the app around "부부/가족 공동 자산관리" rather than a generic solo budget app.
+- Prioritize:
+  - shared household invite/join reliability
+  - daily transaction speed
+  - household cash-flow report
+  - shared budget
+  - family plan monetization
+- Avoid adding broad finance features until real two-person household use is stable.
+
 ## Auth
 
 - Add real password reset before wider testing.

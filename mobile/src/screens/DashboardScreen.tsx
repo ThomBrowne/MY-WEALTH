@@ -265,6 +265,7 @@ const insightStyles = StyleSheet.create({
 });
 
 function QuickScanCard({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
   return (
     <TouchableOpacity style={qsStyles.card} onPress={onPress} activeOpacity={0.8}>
       <View style={qsStyles.iconBg}>
@@ -272,7 +273,7 @@ function QuickScanCard({ onPress }: { onPress: () => void }) {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={qsStyles.title}>영수증 스캔</Text>
-        <Text style={qsStyles.desc}>AI가 금액·상점을 자동으로 입력해요</Text>
+        <Text style={qsStyles.desc}>{t('dash.quickScanDesc')}</Text>
       </View>
       <Text style={qsStyles.arrow}>›</Text>
     </TouchableOpacity>
@@ -304,6 +305,53 @@ const TX_META = {
   expense:  { prefix: '-', color: COLORS.danger  },
   transfer: { prefix: '',  color: COLORS.info    },
 };
+
+function FamilyMissionCard({ onPress }: { onPress: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <TouchableOpacity style={familyStyles.card} onPress={onPress} activeOpacity={0.86}>
+      <View style={familyStyles.headerRow}>
+        <View style={familyStyles.badge}>
+          <Text style={familyStyles.badgeText}>2+</Text>
+        </View>
+        <Text style={familyStyles.title}>{t('dash.familyTitle')}</Text>
+      </View>
+      <Text style={familyStyles.body}>{t('dash.familyBody')}</Text>
+      <Text style={familyStyles.cta}>{t('dash.familyCta')}</Text>
+    </TouchableOpacity>
+  );
+}
+
+const familyStyles = StyleSheet.create({
+  card: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 8 },
+  badge: {
+    minWidth: 30,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: COLORS.primaryDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  badgeText: { color: COLORS.textInverse, fontSize: 12, fontWeight: '800' },
+  title: { flex: 1, color: COLORS.text, fontSize: 14, fontWeight: '800' },
+  body: { color: COLORS.textMuted, fontSize: 12, lineHeight: 18, marginBottom: 10 },
+  cta: { color: COLORS.primary, fontSize: 12, fontWeight: '800' },
+});
 
 function RecentTransactions({ items }: { items: RecentTransaction[] }) {
   const { t } = useTranslation();
@@ -406,6 +454,7 @@ export default function DashboardScreen() {
           savings={summary?.this_month.savings ?? 0}
           netWorth={summary?.net_worth ?? 0}
         />
+        <FamilyMissionCard onPress={() => navigation.navigate('설정')} />
         <QuickScanCard onPress={handleQuickScan} />
         <AIInsightsBanner onPress={goToAdvisor} />
         <MonthSummary

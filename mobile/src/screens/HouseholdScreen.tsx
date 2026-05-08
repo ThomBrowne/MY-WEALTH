@@ -60,6 +60,15 @@ export default function HouseholdScreen() {
           <Text style={s.subtitle}>{t('household.subtitle')}</Text>
         </View>
 
+        <View style={s.valueBox}>
+          {[t('household.value1'), t('household.value2'), t('household.value3')].map((text) => (
+            <View key={text} style={s.valueRow}>
+              <Text style={s.valueDot}>✓</Text>
+              <Text style={s.valueText}>{text}</Text>
+            </View>
+          ))}
+        </View>
+
         <View style={s.tabs}>
           <TouchableOpacity
             style={[s.tab, tab === 'create' && s.tabActive]}
@@ -127,6 +136,18 @@ const s = StyleSheet.create({
   logo: { fontSize: 52, marginBottom: 12 },
   title: { fontSize: 22, fontWeight: '700', color: COLORS.text, marginBottom: 6 },
   subtitle: { fontSize: 13, color: COLORS.textMuted, textAlign: 'center', lineHeight: 20 },
+  valueBox: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    padding: 14,
+    gap: 9,
+    marginBottom: 22,
+  },
+  valueRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  valueDot: { color: COLORS.primary, fontSize: 13, fontWeight: '800', lineHeight: 18 },
+  valueText: { flex: 1, color: COLORS.textMuted, fontSize: 12, lineHeight: 18 },
   tabs: { flexDirection: 'row', backgroundColor: COLORS.border, borderRadius: 10, padding: 3, marginBottom: 24 },
   tab: { flex: 1, paddingVertical: 9, alignItems: 'center', borderRadius: 8 },
   tabActive: { backgroundColor: COLORS.surface },
